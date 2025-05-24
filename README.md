@@ -2,6 +2,7 @@
 
 A fun and challenging memory-based maze game built using **Python** and **Pygame**. Navigate through a hidden path you briefly saw—one wrong step and it’s game over!
 ![memory-maze-demo](https://user-images.githubusercontent.com/yourusername/demo.gif)
+
 ---
 
 ## 🎮 Game Concept
