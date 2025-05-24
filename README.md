@@ -45,6 +45,6 @@ pip install pygame
 python memory_maze.py
 ```
 
-# The Amazon Q CLI Challenge
+# 🙏 The Amazon Q CLI Challenge
 
 Built for the Amazon Q CLI challenge, this game showcases how developers can use conversational AI to rapidly prototype and refine interactive experiences and to experiment with how natural language tools like Q can accelerate creative coding!
