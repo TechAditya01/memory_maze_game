@@ -22,14 +22,6 @@ A fun and challenging memory-based maze game built using **Python** and **Pygame
 
 ---
 
-## 📸 Screenshots
-
-| Path Preview | Game Over | Victory |
-|--------------|-----------|---------|
-| ![preview](https://user-images.githubusercontent.com/yourusername/preview.png) | ![gameover](https://user-images.githubusercontent.com/yourusername/gameover.png) | ![win](https://user-images.githubusercontent.com/yourusername/win.png) |
-
----
-
 ## 🛠️ Installation
 
 ### Prerequisites:
