@@ -41,3 +41,11 @@ source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
 # Install dependencies
 pip install pygame
+
+# Run the game
+python memory_maze.py
+```
+
+# The Amazon Q CLI Challenge
+
+Built for the Amazon Q CLI challenge, this game showcases how developers can use conversational AI to rapidly prototype and refine interactive experiences and to experiment with how natural language tools like Q can accelerate creative coding!
