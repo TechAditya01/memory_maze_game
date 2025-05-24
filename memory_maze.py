@@ -1,9 +1,11 @@
 import pygame
 import random
 import time
+import os
 
 # Initialize
 pygame.init()
+pygame.mixer.init()
 WIDTH, HEIGHT = 600, 600
 ROWS, COLS = 6, 6
 CELL_SIZE = WIDTH // COLS
@@ -14,26 +16,53 @@ pygame.display.set_caption("Memory Maze")
 
 font = pygame.font.SysFont(None, 36)
 
+# Load sounds (optional, handle missing files gracefully)
+def load_sound(filename):
+    try:
+        return pygame.mixer.Sound(os.path.join(os.path.dirname(__file__), filename))
+    except (pygame.error, FileNotFoundError):
+        print(f"Warning: Sound file {filename} not found or could not be loaded.")
+        return None
+
+sound_win = load_sound("win.wav")
+sound_lose = load_sound("lose.wav")
+
+# High score file
+HIGH_SCORE_FILE = "highscore.txt"
+
+def load_high_score():
+    if os.path.exists(HIGH_SCORE_FILE):
+        with open(HIGH_SCORE_FILE, "r") as f:
+            try:
+                return int(f.read())
+            except:
+                return 0
+    return 0
+
+def save_high_score(score):
+    with open(HIGH_SCORE_FILE, "w") as f:
+        f.write(str(score))
+
 # Generate random path
-def generate_path():
+def generate_path(rows, cols):
     path = [(0,0)]
     x, y = 0, 0
-    while (x, y) != (ROWS-1, COLS-1):
-        if x < ROWS - 1 and y < COLS - 1:
+    while (x, y) != (rows-1, cols-1):
+        if x < rows - 1 and y < cols - 1:
             if random.choice([True, False]):
                 x += 1
             else:
                 y += 1
-        elif x < ROWS - 1:
+        elif x < rows - 1:
             x += 1
         else:
             y += 1
         path.append((x, y))
     return path
 
-def draw_grid(path, show_path):
-    for i in range(ROWS):
-        for j in range(COLS):
+def draw_grid(path, show_path, rows, cols):
+    for i in range(rows):
+        for j in range(cols):
             rect = pygame.Rect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             if (i, j) in path and show_path:
                 pygame.draw.rect(win, GREEN, rect)
@@ -50,57 +79,120 @@ def show_message(text):
     pygame.display.update()
     pygame.time.delay(2000)
 
+def draw_text(text, x, y, color=BLACK):
+    txt = font.render(text, True, color)
+    win.blit(txt, (x, y))
+
 def main():
+    global ROWS, COLS, CELL_SIZE
     clock = pygame.time.Clock()
-    run = True
-    path = generate_path()
-    show_path = True
-    path_index = 0
+    level = 1
+    lives = 3
+    high_score = load_high_score()
 
-    player_pos = (0, 0)
+    while True:
+        # Adjust difficulty by increasing grid size and decreasing path show time
+        ROWS = COLS = min(6 + level - 1, 10)  # max 10x10 grid
+        CELL_SIZE = WIDTH // COLS
+        path = generate_path(ROWS, COLS)
+        show_path = True
+        path_index = 0
+        player_pos = (0, 0)
+        path_show_time = max(3000 - (level - 1) * 300, 1000)  # decrease show time per level, min 1 sec
+        start_ticks = pygame.time.get_ticks()  # for countdown timer
+        countdown_time = 30  # seconds for countdown timer
 
-    draw_grid(path, show_path)
-    pygame.display.update()
-    pygame.time.delay(3000)
-    show_path = False
+        run = True
+        won = False
 
-    while run:
-        clock.tick(60)
-        win.fill(WHITE)
-        draw_grid(path, show_path)
-        pygame.draw.rect(win, RED, (player_pos[1]*CELL_SIZE, player_pos[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        draw_grid(path, show_path, ROWS, COLS)
         pygame.display.update()
+        pygame.time.delay(path_show_time)
+        show_path = False
 
-        x, y = player_pos
-        new_pos = player_pos
+        while run:
+            clock.tick(60)
+            win.fill(WHITE)
+            draw_grid(path, show_path, ROWS, COLS)
+            pygame.draw.rect(win, RED, (player_pos[1]*CELL_SIZE, player_pos[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            # Draw lives, level, high score, countdown timer
+            draw_text(f"Lives: {lives}", 10, 10)
+            draw_text(f"Level: {level}", 10, 40)
+            draw_text(f"High Score: {high_score}", 10, 70)
+
+            # Calculate countdown timer
+            seconds_passed = (pygame.time.get_ticks() - start_ticks) / 1000
+            time_left = max(0, countdown_time - seconds_passed)
+            draw_text(f"Time Left: {int(time_left)}", WIDTH - 150, 10)
+
+            pygame.display.update()
+
+            if time_left <= 0:
+                lives -= 1
+                if lives <= 0:
+                    if sound_lose:
+                        sound_lose.play()
+                    show_message("Time's up! Game Over.")
+                    run = False
+                    break
+                else:
+                    show_message("Time's up! Try again.")
+                    run = False
+                    break
+
+            x, y = player_pos
+            new_pos = player_pos
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP and x > 0:
+                        new_pos = (x - 1, y)
+                    elif event.key == pygame.K_DOWN and x < ROWS - 1:
+                        new_pos = (x + 1, y)
+                    elif event.key == pygame.K_LEFT and y > 0:
+                        new_pos = (x, y - 1)
+                    elif event.key == pygame.K_RIGHT and y < COLS - 1:
+                        new_pos = (x, y + 1)
+
+            if new_pos != player_pos:
+                if path_index + 1 < len(path) and new_pos == path[path_index + 1]:
+                    path_index += 1
+                    player_pos = new_pos
+                else:
+                    lives -= 1
+                    if lives <= 0:
+                        if sound_lose:
+                            sound_lose.play()
+                        show_message("Wrong Move! Game Over.")
+                        run = False
+                    else:
+                        show_message(f"Wrong Move! Lives left: {lives}")
+                        run = False
+
+            if player_pos == (ROWS-1, COLS-1):
+                if sound_win:
+                    sound_win.play()
+                show_message("You Win!")
+                won = True
                 run = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and x > 0:
-                    new_pos = (x - 1, y)
-                elif event.key == pygame.K_DOWN and x < ROWS - 1:
-                    new_pos = (x + 1, y)
-                elif event.key == pygame.K_LEFT and y > 0:
-                    new_pos = (x, y - 1)
-                elif event.key == pygame.K_RIGHT and y < COLS - 1:
-                    new_pos = (x, y + 1)
 
-        if new_pos != player_pos:
-            if path_index + 1 < len(path) and new_pos == path[path_index + 1]:
-                path_index += 1
-                player_pos = new_pos
-            else:
-                show_message("Wrong Move! Game Over.")
-                run = False
+        if won:
+            level += 1
+            score = level - 1
+            if score > high_score:
+                high_score = score
+                save_high_score(high_score)
+        else:
+            # Reset level and lives on game over
+            level = 1
+            lives = 3
 
-        if player_pos == (ROWS-1, COLS-1):
-            show_message("You Win!")
-            run = False
-
-    pygame.quit()
-
+        # Small delay before next level or retry
+        pygame.time.delay(1000)
 
 if __name__ == "__main__":
     main()
