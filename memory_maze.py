@@ -104,6 +104,7 @@ def main():
 
         run = True
         won = False
+        correct_moves = 0  # count of correct moves in current run
 
         draw_grid(path, show_path, ROWS, COLS)
         pygame.display.update()
@@ -118,13 +119,16 @@ def main():
 
             # Draw lives, level, high score, countdown timer
             draw_text(f"Lives: {lives}", 10, 10)
-            draw_text(f"Level: {level}", 10, 40)
+            # draw_text(f"Level: {level}", 10, 40)
             draw_text(f"High Score: {high_score}", 10, 70)
 
             # Calculate countdown timer
             seconds_passed = (pygame.time.get_ticks() - start_ticks) / 1000
             time_left = max(0, countdown_time - seconds_passed)
             draw_text(f"Time Left: {int(time_left)}", WIDTH - 150, 10)
+
+            # Draw current correct moves as score
+            draw_text(f"Score: {correct_moves}", WIDTH - 150, 40)
 
             pygame.display.update()
 
@@ -134,8 +138,8 @@ def main():
                     if sound_lose:
                         sound_lose.play()
                     show_message("Time's up! Game Over.")
-                    run = False
-                    break
+                    pygame.quit()
+                    return
                 else:
                     show_message("Time's up! Try again.")
                     run = False
@@ -162,13 +166,18 @@ def main():
                 if path_index + 1 < len(path) and new_pos == path[path_index + 1]:
                     path_index += 1
                     player_pos = new_pos
+                    correct_moves += 1
+                    if correct_moves > high_score:
+                        high_score = correct_moves
+                        save_high_score(high_score)
                 else:
                     lives -= 1
                     if lives <= 0:
                         if sound_lose:
                             sound_lose.play()
                         show_message("Wrong Move! Game Over.")
-                        run = False
+                        pygame.quit()
+                        return
                     else:
                         show_message(f"Wrong Move! Lives left: {lives}")
                         run = False
@@ -181,15 +190,16 @@ def main():
                 run = False
 
         if won:
-            level += 1
-            score = level - 1
-            if score > high_score:
-                high_score = score
-                save_high_score(high_score)
+            # level += 1
+            # score = level - 1
+            # if score > high_score:
+            #     high_score = score
+            #     save_high_score(high_score)
+            pass
         else:
-            # Reset level and lives on game over
-            level = 1
-            lives = 3
+            # Reset level on game over
+            # level = 1
+            pass
 
         # Small delay before next level or retry
         pygame.time.delay(1000)
